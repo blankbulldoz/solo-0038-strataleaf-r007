@@ -8,35 +8,11 @@ def merge_patch(document, patch):
     if not isinstance(patch, dict):
         return loads(dumps(patch))
     result = loads(dumps(document)) if isinstance(document, dict) else {}
-    updates = []
-
-    def collect(changes, prefix=()):
-        for key, value in changes.items():
-            path = prefix + (key,)
-            if isinstance(value, dict):
-                collect(value, path)
-            else:
-                updates.append((".".join(path), value))
-
-    collect(patch)
-    for path, value in updates:
-        parts = path.split(".")
-        target = result
-        for part in parts[:-1]:
-            child = target.get(part)
-            if not isinstance(child, dict):
-                if value is None:
-                    target = None
-                    break
-                child = {}
-                target[part] = child
-            target = child
-        if target is None:
-            continue
+    for member, value in patch.items():
         if value is None:
-            target.pop(parts[-1], None)
+            result.pop(member, None)
         else:
-            target[parts[-1]] = loads(dumps(value))
+            result[member] = merge_patch(result.get(member), value)
     return result
 
 
